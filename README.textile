@@ -1,0 +1,10 @@
+h1. Little shooter
+
+A simple yet awesome, mini space shooter made in canvas. 
+
+h2. Why?
+
+For the challenge of making a first game in JS using canvas; no more no less. 
+
+Nothing super fancy in the code though.
+
