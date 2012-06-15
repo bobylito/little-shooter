@@ -1,5 +1,18 @@
 //Experience 1 : playing with canvas
 (function(){
+  window.requestAnimFrame = (function(){
+    return  window.requestAnimationFrame || 
+    window.webkitRequestAnimationFrame   || 
+    window.mozRequestAnimationFrame      || 
+    window.oRequestAnimationFrame        || 
+    window.msRequestAnimationFrame       || 
+    function( callback ){
+      window.setTimeout(callback, 1000 / 60);
+    };
+  })();
+
+
+
 //Variables globales
 var dataStore = {};
 //Clefs du datastore
@@ -7,6 +20,7 @@ var CANON_OK = "CANON_OK";
 var CANVAS_H = "CANVAS_H";
 var CANVAS_W = "CANVAS_W";
 var CANVAS_CONTEXT = "CANVAS_CTX";
+var CANVAS_CONTEXT_REAL = "CANVAS_CTX_REAL";
 var SHIP_H="SHIP_H";
 var SHIP_W="SHIP_W";
 var PLAYER="PLAYER";
@@ -51,12 +65,18 @@ function registerImageRequest(uri, callback){
 }
 
 function play(){
-    var canvasDom = document.getElementById("jeu");
-    
-    var canvasCtx = canvasDom.getContext("2d");
-    dataStore[CANVAS_H]=canvasDom.height;
-    dataStore[CANVAS_W]=canvasDom.width;
-    dataStore[CANVAS_CONTEXT]=canvasCtx;
+    var canvasDom = document.getElementById("jeu"),
+        canvasShadow = document.createElement("canvas"),
+        canvasCtx = canvasDom.getContext("2d"),
+        canvasShadowCtx = canvasShadow.getContext("2d");
+
+    dataStore[CANVAS_H] = canvasDom.height;
+    dataStore[CANVAS_W] = canvasDom.width;
+    dataStore[CANVAS_CONTEXT] = canvasShadowCtx;
+    dataStore[CANVAS_CONTEXT_REAL] = canvasCtx;
+
+    canvasShadow.height = canvasDom.height;
+    canvasShadow.width = canvasDom.width;
     
     var universe = createUniverse(100);
     var spaceShip = createSpaceShip();
@@ -147,31 +167,33 @@ function play(){
     var stepVague = 0;
     
     var mainLoop = function(){
-    	var t1 = (new Date()).getTime();
+
+        requestAnimFrame(mainLoop, canvasDom);
+    	
     	if(loadCount>0){
     		
     	}
         else if(dataStore[PLAYER].vie<0){
-			resetScreen(canvasCtx);
-            animateUniverse(universe);
-    		canvasCtx.fillStyle = "rgb(255,255,255)";
+          resetScreen(canvasShadowCtx);
+          animateUniverse(universe);
+    	  canvasShadowCtx.fillStyle = "rgb(255,255,255)";
 			
-            renderUniverse(universe, canvasCtx);
+          renderUniverse(universe, canvasShadowCtx);
 			
-			canvasCtx.font = "10pt Arial";
-			canvasCtx.textAlign="center";
-			canvasCtx.fillText("Your score is "+dataStore[SCORE], dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.4);
-			canvasCtx.font = "20pt Arial";
-			canvasCtx.fillText("Game over", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.51);
-			canvasCtx.font = "10pt Arial";
-			canvasCtx.fillText("Please insert coins (or press F5)", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.6);
-			
-			animateUniverse(universe);
+          canvasShadowCtx.font = "10pt Arial";
+          canvasShadowCtx.textAlign="center";
+          canvasShadowCtx.fillText("Your score is "+dataStore[SCORE], dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.4);
+          canvasShadowCtx.font = "20pt Arial";
+          canvasShadowCtx.fillText("Game over", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.51);
+          canvasShadowCtx.font = "10pt Arial";
+          canvasShadowCtx.fillText("Please insert coins (or press F5)", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.6);
+          
+          animateUniverse(universe);
         }
         else if(pause){
-            canvasCtx.font = "20pt Arial";
-			canvasCtx.textAlign="center";
-			canvasCtx.fillText("Pause", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.5);
+            canvasShadowCtx.font = "20pt Arial";
+            canvasShadowCtx.textAlign="center";
+            canvasShadowCtx.fillText("Pause", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.5);
         }
         else {
             if(ctrlKey){
@@ -201,14 +223,15 @@ function play(){
             
             checkCollisions(dataStore[WEAPONS], dataStore[MONSTERS], spaceShip);
             
-            resetScreen(canvasCtx);
+            resetScreen(canvasShadowCtx);
             
-            renderUniverse(universe, canvasCtx);
+            renderUniverse(universe, canvasShadowCtx);
             renderParticles();
-            renderAllBadGuys(dataStore[MONSTERS], canvasCtx);
+            renderAllBadGuys(dataStore[MONSTERS], canvasShadowCtx);
             spaceShip.render();
-            renderMissiles(dataStore[WEAPONS], canvasCtx);
+            renderMissiles(dataStore[WEAPONS], canvasShadowCtx);
             renderHUD();
+            
             
             dataStore[WEAPONS] = animateMissiles(dataStore[WEAPONS]);
             animateSpaceShip();
@@ -216,7 +239,7 @@ function play(){
             dataStore[MONSTERS] = animateAllBadGuys(dataStore[MONSTERS]);
             animateParticles();
         }
-        setTimeout(mainLoop, Math.max(0, 30-((new Date()).getTime()-t1)));
+        canvasCtx.drawImage(canvasShadow, 0, 0);
     };
     mainLoop();
     
@@ -240,7 +263,7 @@ function renderUniverse(universe, canvasCtx){
 	canvasCtx.fillStyle = dataStore[STAR_COLOR];
 	for(var i = 0; i<universe.length; i++){
 		canvasCtx.beginPath();
-		canvasCtx.arc(universe[i].x,universe[i].y,universe[i].lvl ,0,Math.PI * 2,true);
+		canvasCtx.arc(~~universe[i].x,~~universe[i].y,universe[i].lvl ,0,Math.PI * 2,true);
 		canvasCtx.closePath();
 		canvasCtx.fill();
 	}
@@ -308,7 +331,7 @@ function createSpaceShip(){
         },
         render: function(){
       		var canvasCtx=dataStore[CANVAS_CONTEXT];
-            canvasCtx.drawImage(spaceShip.img, this.x, this.y);
+            canvasCtx.drawImage(spaceShip.img, ~~this.x, ~~this.y);
             var oldFunc = this.render;
             if(restarting && iterBlink++>3){
             	var i = 0;
@@ -512,7 +535,7 @@ badguysCreator.ouno = function(xPos,yPos,movePatternFunc){
 		movePattern:moveFunc,
 		render:function(canvasCtx){
 			if(enteredPlayground){
-	            canvasCtx.drawImage(dataStore[MONSTER_OUNO_IMG], this.x, this.y);
+	            canvasCtx.drawImage(dataStore[MONSTER_OUNO_IMG], ~~this.x, ~~this.y);
 			}
 		},
 		animate:function(){
@@ -582,7 +605,7 @@ badguysCreator.asteroide = function(xPos,yPos){
 		movePattern:moveFunc,
 		render:function(canvasCtx){
 			if(enteredPlayground && !this.destroy){
-	            canvasCtx.drawImage(dataStore[MONSTER_ASTEROIDE_IMG], this.x, this.y);
+	            canvasCtx.drawImage(dataStore[MONSTER_ASTEROIDE_IMG], ~~this.x, ~~this.y);
 			}
 		},
 		animate:function(){
@@ -643,7 +666,7 @@ badguysCreator.smallAsteroide = function(xPos,yPos,movePatternFunc){
 		movePattern:moveFunc,
 		render:function(canvasCtx){
 			if(enteredPlayground){
-	            canvasCtx.drawImage(dataStore[MONSTER_ASTEROIDE_IMG], this.x, this.y, this.width, this.height);
+	            canvasCtx.drawImage(dataStore[MONSTER_ASTEROIDE_IMG], ~~this.x, ~~this.y, this.width, this.height);
 			}
 		},
 		animate:function(){
