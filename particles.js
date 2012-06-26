@@ -19,18 +19,15 @@ window.loop.animations.particle =
     }
 
     var particles = [],
-        context = datastore["CANVAS_SHADOW_CTX"],
-        width = datastore["CANVAS_WIDTH"],
-        height = datastore["CANVAS_HEIGHT"],
         res = {
-          render:function(){
+          render:function(context, width, height){
             context.globalCompositeOperation = compositionMethod;
             for(var i = 0; i < particles.length; i++){
               var p = particles[i];
               context.drawImage(particleCanvas, ~~p[0], ~~p[1]);
             }
           },
-          animate:function(now){
+          animate:function(now, width, height){
             for(var i = 0; i < particles.length; i++){
               var p = particles[i],
                   vd = field(p, particles),
