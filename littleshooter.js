@@ -112,8 +112,6 @@ function play(){
   }, true);
 
   document.addEventListener("keydown", function(evt){
-    evt.stopPropagation();
-    evt.preventDefault();
     if(evt.keyCode == 39) {
       keyRight = true;
     }
@@ -231,20 +229,23 @@ function play(){
               else if(dataStore[PLAYER].vie<0){
                 context.fillStyle = "rgb(255,255,255)";
 
-                renderUniverse(universe, context);
 
-                canvasShadowCtx.font = "10pt Arial";
-                canvasShadowCtx.textAlign="center";
-                canvasShadowCtx.fillText("Your score is "+dataStore[SCORE], dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.4);
-                canvasShadowCtx.font = "20pt Arial";
-                canvasShadowCtx.fillText("Game over", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.51);
-                canvasShadowCtx.font = "10pt Arial";
-                canvasShadowCtx.fillText("Please insert coins (or press F5)", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.6);  
+                renderUniverse(universe, context);
+                context.font = "10pt Arial";
+                context.textAlign="center";
+                context.fillText("Your score is "+dataStore[SCORE], width*0.5, height*0.4);
+                context.font = "20pt Arial";
+                context.fillText("Game over", width*0.5, height*0.51);
+                context.font = "10pt Arial";
+                context.fillText("Please insert coins (or press F5)", width*0.5, height*0.6);  
               }
               else if(pause){
-                canvasShadowCtx.font = "20pt Arial";
-                canvasShadowCtx.textAlign="center";
-                canvasShadowCtx.fillText("Pause", dataStore[CANVAS_W]*0.5, dataStore[CANVAS_H]*0.5);
+                renderUniverse(universe, context);
+                context.fillStyle = "rgb(255,255,255)";
+                context.font = "20pt Arial";
+                context.textAlign="center";
+                context.fillText("Pause", width*0.5, height*0.5);
+                renderHUD(context);
               }
               else {
                 renderUniverse(universe, context);
@@ -257,7 +258,30 @@ function play(){
             }
   }
 
+  var spaceParticles = loop.animations.particle(
+    function createStar(now, width, height){
+      return [
+        Math.random() * width, -10,
+        now + 5000,
+        0,
+        5,
+        now
+      ];
+    },
+    function physicSystem(p){
+      return p;
+    },
+    "",
+    "#FFF",
+    1
+  );
+
   window.loop.registerAnimation(mainLoop);
+  window.loop.registerAnimation(spaceParticles);
+
+  setInterval(function(){
+    spaceParticles.create(10)
+  }, 100)
 
   window.loop.start()
 };
@@ -279,6 +303,16 @@ function renderUniverse(universe, canvasCtx){
 		canvasCtx.closePath();
 		canvasCtx.fill();
 	}
+}
+
+function animateUniverse(universe){
+    for(var i = 0; i<universe.length; i++){
+        universe[i].y += 2 * universe[i].lvl;
+        if(universe[i].y > dataStore[CANVAS_H]){
+            universe[i].y = 0;
+            universe[i].lvl = Math.floor(Math.random()*3)+1;
+        }
+    }
 }
 
 function createSpaceShip(){
@@ -765,15 +799,6 @@ function animateAllBadGuys(arrayOfBG){
 	return resBadGuys;
 }
 
-function animateUniverse(universe){
-    for(var i = 0; i<universe.length; i++){
-        universe[i].y += 2 * universe[i].lvl;
-        if(universe[i].y > dataStore[CANVAS_H]){
-            universe[i].y = 0;
-            universe[i].lvl = Math.floor(Math.random()*3)+1;
-        }
-    }
-}
 
 function checkCollisions(weapons, badguys, spaceShip){
 	for(var i = 0; i<weapons.length; i++){
@@ -876,7 +901,6 @@ function animateParticles(){
 }
 
 function renderHUD(canvasCtx){
-	var canvasCtx = dataStore[CANVAS_CONTEXT];
 	var w = dataStore[CANVAS_W];
 	var h = dataStore[CANVAS_H];
 	var spaceShip = dataStore[PLAYER];

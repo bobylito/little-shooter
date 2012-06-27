@@ -83,9 +83,12 @@ window.loop = (function createMainLoop(){
     return {
       animations:{},
       start: function(){
+        for(anim in this.animations){
+          if(this.animations.hasOwnProperty(anim) && typeof(this.animations[anim]._init) === "function")
+            this.animations[anim]._init(datastore["CANVAS_WIDTH"],datastore["CANVAS_HEIGHT"])
+        }
         context.fillStyle = "#000";
-        context.fillRect(0,0,datastore["CANVAS_WIDTH"],
-            datastore["CANVAS_HEIGHT"]);
+        context.fillRect(0,0,datastore["CANVAS_WIDTH"], datastore["CANVAS_HEIGHT"]);
         status = true;
         loop();
       },
