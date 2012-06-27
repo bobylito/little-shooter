@@ -1,9 +1,10 @@
 window.loop.animations.particle =
 (function(){
-  var height = 0, 
+  var fields = [],
+      height = 0, 
       width = 0;
 
-  var pGen = function createParticleField(createParticle, field, compositionMethod, color, size){
+  var pGen = function createParticleField(init, createParticle, field, compositionMethod, color, size){
     if(size){
       // I know these variables won't be scope in the if (semantic purpose)
       var particleCanvas = document.createElement("canvas"),
@@ -25,6 +26,9 @@ window.loop.animations.particle =
 
     var particles = [],
         res = {
+          _init : function(n, w, h){
+            particles = init(n, w,h);
+          },
           render:function(context, width, height){
                    context.globalCompositeOperation = compositionMethod;
                    for(var i = 0; i < particles.length; i++){
@@ -61,12 +65,13 @@ window.loop.animations.particle =
     }
   };
 
-
+  fields.push(res);
   return res;
 }
-pGen._init = function( w, h){
+pGen._init = function(w, h){
   height = h;
   width = w;
+  fields.forEach(function(e){e._init(new Date(),w,h)})
 }
 return pGen;
 })();

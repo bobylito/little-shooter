@@ -230,7 +230,7 @@ function play(){
                 context.fillStyle = "rgb(255,255,255)";
 
 
-                renderUniverse(universe, context);
+                //renderUniverse(universe, context);
                 context.font = "10pt Arial";
                 context.textAlign="center";
                 context.fillText("Your score is "+dataStore[SCORE], width*0.5, height*0.4);
@@ -240,7 +240,7 @@ function play(){
                 context.fillText("Please insert coins (or press F5)", width*0.5, height*0.6);  
               }
               else if(pause){
-                renderUniverse(universe, context);
+                //renderUniverse(universe, context);
                 context.fillStyle = "rgb(255,255,255)";
                 context.font = "20pt Arial";
                 context.textAlign="center";
@@ -248,7 +248,7 @@ function play(){
                 renderHUD(context);
               }
               else {
-                renderUniverse(universe, context);
+                //renderUniverse(universe, context);
                 renderParticles(context);
                 renderAllBadGuys(dataStore[MONSTERS], context);
                 spaceShip.render(context);
@@ -258,29 +258,45 @@ function play(){
             }
   }
 
-  var spaceParticles = loop.animations.particle(
-    function createStar(now, width, height){
-      return [
-        Math.random() * width, -10,
-        now + 5000,
-        0,
-        5,
-        now
-      ];
-    },
-    function physicSystem(p){
-      return p;
-    },
-    "",
-    "#FFF",
-    1
-  );
+  var spaceParticles = [1,2,3].map(function(e){
+    return loop.animations.particle(
+        function initStars(now, width, height){
+          var t = [];
+          for(i=0; i< 200; i++){
+            t.push([
+            Math.random() * width, Math.random() * height,
+                 now + 5000,
+                 0,
+                 e,
+                 now]);
+          }
+          return t;
+        },
+        function createStar(now, width, height){
+          return [
+            Math.random() * width, -10,
+                 now + 5000,
+                 0,
+                 e,
+                 now
+          ];
+        },
+        function physicSystem(p){
+          return p;
+        },
+        "lighter",
+        "#888",
+        e
+      )
+  });
 
   window.loop.registerAnimation(mainLoop);
-  window.loop.registerAnimation(spaceParticles);
+  spaceParticles.forEach(function(e){
+    window.loop.registerAnimation(e);
+  });
 
   setInterval(function(){
-    spaceParticles.create(10)
+    spaceParticles.forEach(function(a){a.create(10)})
   }, 100)
 
   window.loop.start()
