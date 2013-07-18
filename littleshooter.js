@@ -56,22 +56,11 @@ function registerImageRequest(uri, callback){
 
 function play(){
   var canvasDom = document.getElementById("scene"),
-      canvasShadow = document.createElement("canvas"),
-      canvasCtx = canvasDom.getContext("2d"),
-      canvasShadowCtx = canvasShadow.getContext("2d");
+      spaceShip = createSpaceShip(),
+      ctrlKey = false, keyRight = false, keyLeft = false, keyUp=false, keyDown = false, pause = false;
 
   dataStore[CANVAS_H] = canvasDom.height;
   dataStore[CANVAS_W] = canvasDom.width;
-  dataStore[CANVAS_CONTEXT] = canvasShadowCtx;
-  dataStore[CANVAS_CONTEXT_REAL] = canvasCtx;
-
-  canvasShadow.height = canvasDom.height;
-  canvasShadow.width = canvasDom.width;
-
-  var universe = createUniverse(100);
-  var spaceShip = createSpaceShip();
-
-  var ctrlKey = false, keyRight = false, keyLeft = false, keyUp=false, keyDown = false, pause = false;
 
   registerImageRequest(spaceShip.imgSrc, function(image){
     spaceShip.img = image;
@@ -79,20 +68,6 @@ function play(){
     dataStore[SHIP_W]=image.width;
   });
 
-  spaceShip.registerXBorderCallback(function(dx) {
-    for(var i = 0; i<universe.length; i++){
-      universe[i].x += (dx * universe[i].lvl)*1.2;
-      if(universe[i].x > dataStore[CANVAS_W]){
-        universe[i].x = 0;
-        universe[i].lvl = Math.floor(Math.random()*3)+1;
-      }
-      if(universe[i].x < 0){
-        universe[i].x = dataStore[CANVAS_W];
-        universe[i].lvl = Math.floor(Math.random()*3)+1;
-      }
-    }
-  }
-  );
   dataStore[PLAYER]=spaceShip;
 
   registerImageRequest("ouno.png", function(image){
@@ -171,7 +146,6 @@ function play(){
                   //Loading         
                 }
                 else if(dataStore[PLAYER].vie<0){
-                  animateUniverse(universe);
                 }
                 else if(pause){
                   //pausing
@@ -215,7 +189,6 @@ function play(){
                   checkCollisions(dataStore[WEAPONS], dataStore[MONSTERS], spaceShip);
                   dataStore[WEAPONS] = animateMissiles(dataStore[WEAPONS]);
                   animateSpaceShip();
-                  animateUniverse(universe);
                   dataStore[MONSTERS] = animateAllBadGuys(dataStore[MONSTERS]);
                   animateParticles();
                 } 
@@ -228,9 +201,6 @@ function play(){
               }
               else if(dataStore[PLAYER].vie<0){
                 context.fillStyle = "rgb(255,255,255)";
-
-
-                //renderUniverse(universe, context);
                 context.font = "10pt Arial";
                 context.textAlign="center";
                 context.fillText("Your score is "+dataStore[SCORE], width*0.5, height*0.4);
@@ -240,7 +210,6 @@ function play(){
                 context.fillText("Please insert coins (or press F5)", width*0.5, height*0.6);  
               }
               else if(pause){
-                //renderUniverse(universe, context);
                 context.fillStyle = "rgb(255,255,255)";
                 context.font = "20pt Arial";
                 context.textAlign="center";
@@ -248,7 +217,6 @@ function play(){
                 renderHUD(context);
               }
               else {
-                //renderUniverse(universe, context);
                 renderParticles(context);
                 renderAllBadGuys(dataStore[MONSTERS], context);
                 spaceShip.render(context);
@@ -262,7 +230,7 @@ function play(){
     return loop.animations.particle(
         function initStars(now, width, height){
           var t = [];
-          for(i=0; i< 200; i++){
+          for(i=0; i< 20; i++){
             t.push([
             Math.random() * width, Math.random() * height,
                  now + 5000,
@@ -284,7 +252,7 @@ function play(){
         function physicSystem(p){
           return p;
         },
-        "lighter",
+        "",
         "#888",
         e
       )
@@ -296,44 +264,15 @@ function play(){
   });
 
   setInterval(function(){
-    spaceParticles.forEach(function(a){a.create(10)})
+    spaceParticles.forEach(function(a){a.create(2)})
   }, 100)
 
   window.loop.start()
 };
 
-function createUniverse(nbElement){
-    var universe = [];
-    for(var i = 0; i<nbElement; i++){
-        universe[i] = {x : Math.floor(Math.random()*dataStore[CANVAS_W]),y : Math.floor(Math.random()*dataStore[CANVAS_H]), 
-        	lvl : Math.floor(Math.random()*3)+1};
-    }
-    return universe;
-}
-
-function renderUniverse(universe, canvasCtx){
-	canvasCtx.fillStyle = dataStore[STAR_COLOR];
-	for(var i = 0; i<universe.length; i++){
-		canvasCtx.beginPath();
-		canvasCtx.arc(~~universe[i].x,~~universe[i].y,universe[i].lvl ,0,Math.PI * 2,true);
-		canvasCtx.closePath();
-		canvasCtx.fill();
-	}
-}
-
-function animateUniverse(universe){
-    for(var i = 0; i<universe.length; i++){
-        universe[i].y += 2 * universe[i].lvl;
-        if(universe[i].y > dataStore[CANVAS_H]){
-            universe[i].y = 0;
-            universe[i].lvl = Math.floor(Math.random()*3)+1;
-        }
-    }
-}
-
 function createSpaceShip(){
-	var restarting = false;
-	var iterBlink=0;
+    var restarting = false;
+    var iterBlink=0;
     var spaceShip = { 
     	x : Math.floor(dataStore[CANVAS_W]/2),
     	y : 250,
@@ -342,12 +281,10 @@ function createSpaceShip(){
     	inertieY : 0,
     	vie:3,
     	speed:1.5,
-    	xBorder: function(dx){},
         moveLeft: function(){
             var finalPos = this.x-this.speed;
             if(finalPos <= 0){
                 this.x = 0;
-                this.xBorder(-1);
             }
             else {
                 this.x = finalPos;
@@ -358,7 +295,6 @@ function createSpaceShip(){
             var finalPos = this.x+this.speed;
             if(finalPos >= dataStore[CANVAS_W] - dataStore[SHIP_W]){
                 this.x = dataStore[CANVAS_W] - dataStore[SHIP_W];
-                this.xBorder(+1);
             }
             else{
                 this.x = finalPos;
@@ -397,16 +333,13 @@ function createSpaceShip(){
             if(restarting && iterBlink++>3){
             	var i = 0;
             	iterBlink = 0;
-				this.render = function(){
-					if(i++>3){
-						this.render=oldFunc;
-					}
-				}
+                this.render = function(){
+                        if(i++>3){
+                                this.render=oldFunc;
+                        }
+                }
             }
         } ,
-        registerXBorderCallback: function(xCallbackFunc){
-        	this.xBorder = xCallbackFunc;
-        },
         getRectangleZone: function(){
         	return [
 				this.x,
@@ -594,11 +527,11 @@ badguysCreator.ouno = function(xPos,yPos,movePatternFunc){
 		height:dataStore[MONSTER_OUNO_H],
 		width:dataStore[MONSTER_OUNO_W],
 		movePattern:moveFunc,
-		render:function(canvasCtx){
-			if(enteredPlayground){
-	            canvasCtx.drawImage(dataStore[MONSTER_OUNO_IMG], ~~this.x, ~~this.y);
-			}
-		},
+                render:function(canvasCtx){
+                  if(enteredPlayground){
+                    canvasCtx.drawImage(dataStore[MONSTER_OUNO_IMG], ~~this.x, ~~this.y);
+                  }
+                },
 		animate:function(){
 			if(destroy){
 				return false;
