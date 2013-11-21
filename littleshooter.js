@@ -56,11 +56,12 @@ function registerImageRequest(uri, callback){
 
 function play(){
   var canvasDom = document.getElementById("scene"),
-      spaceShip = createSpaceShip(),
       ctrlKey = false, keyRight = false, keyLeft = false, keyUp=false, keyDown = false, pause = false;
 
   dataStore[CANVAS_H] = canvasDom.height;
   dataStore[CANVAS_W] = canvasDom.width;
+
+  var spaceShip = createSpaceShip();
 
   registerImageRequest(spaceShip.imgSrc, function(image){
     spaceShip.img = image;
